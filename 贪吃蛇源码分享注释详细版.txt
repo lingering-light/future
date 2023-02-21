@@ -1,0 +1,233 @@
+#define  _CRT_SECURE_NO_DEPRECATE
+#pragma warning(disable:4996) //无视风险错误
+#include<stdio.h>
+#include<stdlib.h>     //调用键盘库
+#include<conio.h>     //调用控制台光标库
+#include<windows.h>//调用windows库
+#define High 20          //定义High,Width数值
+#define Width 30
+int move;                        //定义变量
+int food_x, food_y;
+int c[High][Width] = { 0 };     //数组初始化
+void gotoxy(int x, int y)   //刷新控制台光标，动画就是连续的画面
+{
+	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);//读取
+	COORD pos;
+	pos.X = x;
+	pos.Y = y;
+	SetConsoleCursorPosition(handle, pos);//缓存
+}
+
+void show()    //（打印函数，将符合数组值的打印出来）//（通过给数组赋值来确定想打印的东西）
+{
+	gotoxy(0, 0);
+	int i, j;
+	for (i = 0; i<High; i++)
+	{
+		for (j = 0; j<Width; j++)
+		{
+			if (c[i][j] == 0)
+				printf("  ");
+			else if (c[i][j] == -1)
+				printf("||");
+			else if (c[i][j] == 1)
+				printf("■");
+			else if (c[i][j]>1)
+				printf("□");
+			else if (c[i][j] == -2)
+				printf("。");
+		}
+		printf("\n");
+	}
+	Sleep(50);
+}
+void startup()    //（打印地图边框）
+{
+	int i, j;
+	for (i = 0; i<High; i++)
+	{
+		c[i][0] = -1;               //在x坐标上打印i个数组值为-1的||
+		c[i][Width - 1] = -1;  
+	}
+	for (j = 0; j<Width; j++)
+	{
+		c[0][j] = -1;              //同理
+		c[High - 1][j] = -1;
+	}
+	c[High / 2][Width / 2] = 1;         //在控制台中央打印头部
+	//for (i = 1; i <= 4; i++)           //该循环是初始化蛇身的循环，例如初始化长5格的蛇
+	//	c[High / 2][Width / 2 - i] = i + 1;
+	move = 4;                               //使蛇初始向右运动，move在后面
+	food_x = rand() % (High - 5) + 2;  //食物的随机生成（x,y)
+	food_y = rand() % (Width - 5) + 2;
+	c[food_x][food_y] = -2;         //生成新食物
+}
+
+void moveS()                                 //蛇的运动函数
+{
+	int i, j;
+	for (i = 1; i<High - 1; i++)
+	{
+		for (j = 1; j<Width - 1; j++)
+		{
+			if (c[i][j]>0)
+				(c[i][j])++;
+		}
+	}
+	int oldT_i, oldT_j, oldH_i, oldH_j;
+	int max = 0;                             //暂存数据，实现数组的数据交换，相似与数组排序
+	for (i = 1; i<High - 1; i++)
+	{
+		for (j = 1; j<Width - 1; j++)
+		{
+			if (c[i][j]>0)
+			{
+				if (max<c[i][j])
+				{
+					max = c[i][j];
+					oldT_i = i;
+					oldT_j = j;
+				}
+				if (c[i][j] == 2)
+				{
+					oldH_i = i;
+					oldH_j = j;
+				}
+			}
+		}
+	}
+	int newH_i, newH_j;
+	if (move == 1)                 //蛇的移动方向，坐标
+	{
+		newH_i = oldH_i - 1;
+		newH_j = oldH_j;
+	}
+	if (move == 2)
+	{
+		newH_i = oldH_i + 1;
+		newH_j = oldH_j;
+	}
+	if (move == 3)
+	{
+		newH_i = oldH_i;
+		newH_j = oldH_j - 1;
+	}
+	if (move == 4)
+	{
+		newH_i = oldH_i;
+		newH_j = oldH_j + 1;
+	}
+
+	if (c[newH_i][newH_j] == -2)        //当蛇吃到食物时，也是当数组值等于-2时，
+	{
+		c[food_x][food_y] = 0;        //食物消失
+		food_x = rand() % (High - 5) + 2;
+		food_y = rand() % (Width - 5) + 2;
+		c[food_x][food_y] = -2;
+	}
+	else
+	{
+		c[oldT_i][oldT_j] = 0;  //继续运动（与空格交换位置）
+	}
+	if (c[newH_i][newH_j]>0 || c[newH_i][newH_j] == -1)  //当蛇咬到自己时，与蛇撞墙时，游戏结束。
+									//当数组值大于0与数组值等于-1时，游戏结束。
+	{
+		printf("游戏失败！\n");
+		Sleep(5000);
+		system("pause");
+		exit(0);
+	}
+	else
+	{
+		c[newH_i][newH_j] = 1;
+	}
+}
+
+void updateWithoutInput()   //一个与用户无关的函数（保证move的持续运行）
+{
+	moveS();
+}
+void updateWithInput()      //一个与用户有关的函数（通过获取键盘输入值来改变程序运行）
+{
+	char input;               //暂存数据
+	if (kbhit())                //检验键盘是否输入
+	{
+		input = getch();
+		if (input == 'a')
+		{
+			move = 3;
+			moveS();
+		}
+		if (input == 'd')
+		{
+			move = 4;
+			moveS();
+		}
+		if (input == 'w')
+		{
+			move = 1;
+			moveS();
+		}
+		if (input == 's')
+		{
+			move = 2;
+			moveS();
+		}
+	}
+}
+void menu()
+{
+	system("color 4");
+	printf("--------------------------------------------------------\n");
+	printf("----------------------------------------------------------------------\n");
+	printf("----------------------------------------------------------------------\n");
+	printf("-------------------c语言实现贪吃蛇（丐版）----------------------------\n");
+	printf("----------------不使用↑↓←→操作，用w,s,d,a-------------------------\n");
+	printf("-----------------回头就死（不能回头）---------------------------------\n");
+	printf("-----------------不能碰墙---------------------------------------------\n");
+	printf("----------------------------------------------------------------------\n");
+	printf("----------------------请选择你的游戏模式------------------------------\n");
+	printf("-----------------1-简单 2-正常 3-困难 4-地狱--------------------------\n");
+
+	printf("按空格键开始游戏");
+	int  char_a;
+	char_a = _getch();
+	if (char_a = 32)
+	{
+		system("cls");           //清屏
+	}
+}
+void prepare()                             //该函数为文字的渐入渐出，通过空格与文字的交换
+{
+	char arr1[] = "欢迎来到贪吃蛇";
+	char arr2[] = "                ";
+	int left = 0;                          //左边开始
+	int right = strlen(arr1) - 1;    //右边开始
+
+
+	while (left <= right)
+	{
+		arr2[left] = arr1[left];
+		arr2[right] = arr1[right];
+		printf("%s\n", arr2);
+		Sleep(100);              //控制交换的时间
+		system("cls");
+		left++;
+		right--;
+	}
+	printf("欢迎来到贪吃蛇");
+}
+
+int main()                                            //主函数
+{
+	prepare();                    //对函数进行调用
+	menu();                       //注意调用函数不要带类型名，否则无法调用
+	startup();
+	while (1)
+	{
+		show();
+		updateWithoutInput();
+		updateWithInput();
+	}
+	return 0;
+}
